@@ -1,5 +1,7 @@
 
 import os
+import sys
+import glob
 
 
 DEVICE_MAP = {
@@ -74,7 +76,7 @@ class PacketDetector:
                     address = self.head[1]
                     inv_address = self.head[2]
                     end = self.head[3]
-                    if address ^ inv_address == 0xff and begin == begin and end == 0x68:
+                    if address ^ inv_address == 0xff and begin == 0x68 and end == 0x68:
                         self.state = State.BODY
                         self.body.clear()
                     else:
@@ -134,7 +136,7 @@ class PacketDetector:
         self.packet_callback(t, packet)
 
 
-def main(logfile):
+def main(logfile, out_folder):
     with open(logfile, 'r') as f:
         raw_lines = f.readlines()
 
@@ -155,25 +157,38 @@ def main(logfile):
 
     print('Detected {} packets'.format(len(packets)))
 
-    prefix, ext = os.path.splitext(logfile)
-    outfile_raw = prefix + '_raw' + ext
-    outfile_readable = prefix + '_readable' + ext
+    logfile_name = os.path.basename(logfile)
+    prefix, ext = os.path.splitext(logfile_name)
+    outfile_raw = os.path.join(out_folder, prefix + '_raw' + ext)
+    outfile_readable = os.path.join(out_folder, prefix + '_readable' + ext)
     line_format = '{:<20}: {}'
-    line_readable_format = '{:<20}: ({}{}) {}'
+    line_readable_format = '{:<20}: {}{:8}: {:02x} {:02x} {:02x} | {}'
     with open(outfile_raw, 'w') as f_raw, open(outfile_readable, 'w') as f_readable:
         for t, packet in packets:
             data_raw = packet.format_raw()
-            data_readable = packet.format_readable()
             # print('{}: {}'.format(t, data_raw.hex(' ')))
             f_raw.write(line_format.format(t, data_raw.hex(' ')))
             f_raw.write('\n')
             device_name = DEVICE_MAP.get(packet.address, 'unknown')
             direction = '<-' if packet.operation & 0x80 else '->'
-            f_readable.write(line_readable_format.format(t, direction, device_name, data_readable.hex(' ')))
+            line = line_readable_format.format(
+                t,
+                direction, device_name,
+                packet.address, packet.operation, len(packet.payload),
+                packet.payload.hex(' ')
+            )
+            f_readable.write(line)
             f_readable.write('\n')
 
 
 
 if __name__ == '__main__':
-    logfile = '../logs/serial-20250608-205905.txt'
-    main(logfile)
+    if len(sys.argv) >= 2:
+        logfiles = [sys.argv[1]]
+    else:
+        logs_folder = '../logs'
+        logfiles = glob.glob(os.path.join(logs_folder, 'serial-*.txt'))
+
+    for logfile in logfiles:
+        print('process', logfile)
+        main(logfile, '../logs_processed')

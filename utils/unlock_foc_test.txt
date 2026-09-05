@@ -1,0 +1,9 @@
+bad crc16
+request> fe fe fe fe 68 20 df 68 05 02 a6 b3 2f 16
+68 20 df 68 85 01 02 57 16
+
+good crc16
+request> !focb4
+command: fe fe fe fe 68 20 df 68 05 02 4f b9 de 16
+68 20 df 68 85 01 01 56 16
+

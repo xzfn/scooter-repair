@@ -88,7 +88,7 @@ class DashDisplay:
     def __init__(self):
         # charging mode 0x01
         # parking led 0x04
-        # enery recovery icon 0x10
+        # energy recovery icon 0x10
         # eco mode icon 0x20
         # parking led flash and show error code 0x80 (error code value is last byte)
         self.flags_0 = 0x06
